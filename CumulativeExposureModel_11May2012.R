@@ -176,17 +176,19 @@ flag=1
                 }
               
           } else {    #-- for lambs
-              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(LambGroup)[1]==0,
+              l<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Lamb")
+              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
                                  0,
-                                 sum(LambGroup$SheddingRate[sample(1:dim(LambGroup)[1],Lambcontactnumber)])))
+                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber)])))
               ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp$Mother[j])
-              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
+              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
               DiseaseStatus[j]<-ifelse(contactE!=0,"I",
                                        ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
                                               "I","S"))
               NewCount[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
               NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-          }
+              NewDoseAtInfection[j]<-1 
+              }
   			}
         #-- Recovery from Acute #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="I"){  #-- can either recover or stay in I. 
