@@ -140,6 +140,10 @@ flag=1
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
     
+    SpatGrpNew<-rep(NA,dim(temp)[1])
+    SpatGrpNew<-ifelse(t %% 365 <= 60, rep(1,dim(temp)[1]),ifelse(t %% 365 == 61, ceiling(runif(dim(temp)[1],min=0,max=ngroups)),temp$SpatGrp))
+    temp$SpatGrp<-SpatGrpNew
+    
     LambOpen<-lambtransmission.mod.fun(i)
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
     
