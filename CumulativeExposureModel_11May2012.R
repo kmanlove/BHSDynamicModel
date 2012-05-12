@@ -58,6 +58,8 @@ IndividualSIR<-function(timesteps=timesteps,
   RefTS1$SheddingRate<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Mother<-rep(NA,length(RefTS1$Age)) 
+  RefTS1$SpatGrp<-rep(NA,length(RefTS1$Age))
+  RefTS1$DoseAtInfection<-rep(NA,length(RefTS1$Age))
   
 	StorageList[[1]][[1]]<-RefTS1
 
