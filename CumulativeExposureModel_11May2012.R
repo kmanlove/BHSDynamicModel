@@ -272,7 +272,9 @@ flag=1
     
     #-- pick set of potential moms to give birth. --#
     NumNewMoms<-BirthRate*K/(K+dim(temp)[1])*NumPotentialMoms
-    NewMoms<-PotentialMoms[sample(1:NumPotentialMoms,size=floor(NumNewMoms)),]$ID
+    momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
+    NewMoms<-PotentialMoms[momsample,]$ID
+    MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
     temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
     NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
 
@@ -295,6 +297,8 @@ flag=1
       NewRows$Mother<-NewMoms
       NewRows$HasLamb<-rep(0,NewBirths)
       NewRows$SheddingRate<-rep(0,NewBirths)
+      NewRows$DoseAtInfection<-rep(NA,NewBirths)
+      NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
 
 		}
 	#-- 8) Store temp in StorageList.
