@@ -55,7 +55,7 @@ IndividualSIR<-function(timesteps=timesteps,
 	RefTS1$StillAlive<-rbinom(dim(RefTS1)[1],1,.9)	
   RefTS1$Status<-c(rep("I",1),rep("R",floor(PropRecovered*n)),rep("S",n-floor(PropRecovered*n)-1))	
   RefTS1$Cause<-rep(0,n)	
-  RefTS1$Dose<-c(rep(1,1),rep(0,n-1))   
+  RefTS1$SheddingRate<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Mother<-rep(NA,length(RefTS1$Age)) 
   
@@ -123,7 +123,7 @@ flag=1
     #-- Loop through all individuals to update disease statuses.
 		DiseaseStatus<-rep(NA,dim(temp)[1])
       NewCount<-rep(NA,dim(temp)[1])
-      NewDose<-rep(NA,dim(temp)[1])
+      NewSheddingRate<-rep(NA,dim(temp)[1])
 
     EweGroup<-subset(temp,Subgroup=="Ewe")
     LambGroup<-subset(temp,Subgroup=="Lamb")
@@ -137,7 +137,7 @@ flag=1
         if(temp$Status[j]=="S"){
           
           if(temp$Subgroup[j]=="Ewe"){
-              contactsetE<-sum(EweGroup$Dose[sample(1:dim(EweGroup)[1],contactnumber)])
+              contactsetE<-sum(EweGroup$SheddingRate[sample(1:dim(EweGroup)[1],contactnumber)])
               lamb<-subset(temp,Subgroup=="Lamb" & Mother==temp$ID[j])
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
@@ -146,50 +146,50 @@ flag=1
             DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
             #-- need propchronic to reflect dosage
             NewCount[j]<-temp$Count[j]+1
-            NewDose[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
+            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
           } else {
                   DiseaseStatus[j]<-"S"
                   NewCount[j]<-temp$Count[j]
-                  NewDose[j]<-0
+                  NewSheddingRate[j]<-0
                 }
               
           } else {    #-- for lambs
               contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(LambGroup)[1]==0,
                                  0,
-                                 sum(LambGroup$Dose[sample(1:dim(LambGroup)[1],Lambcontactnumber)])))
+                                 sum(LambGroup$SheddingRate[sample(1:dim(LambGroup)[1],Lambcontactnumber)])))
               ewe<-subset(temp,Subgroup=="Ewe" & ID==temp$Mother[j])
-              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="I"|ewe$Status=="C",ewe$Dose,0))  
+              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
               DiseaseStatus[j]<-ifelse(contactE!=0,"I",
                                        ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
                                               "I","S"))
               NewCount[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
-              NewDose[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
+              NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
           }
   			}
         #-- Recovery from Acute #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="I"){  #-- can either recover or stay in I. 
 						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Gamma)==1,"R","I")
             NewCount[j]<-temp$Count[j]
-            NewDose[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
+            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
 					}
         #-- Recovery/retention in Chronic #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="C"){  
             currentgammaC<-chronicdecrease*temp$Count[j]*GammaChronic   
 						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=1-currentgammaC)==1,"C","R")
             NewCount[j]<-temp$Count[j]
-            NewDose[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,0)
+            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,0)
 					}
         #-- Waning from recovered back to S --#
         else{
           DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Nu)==1,"S","R")
           NewCount[j]<-temp$Count[j]
-          NewDose[j]<-0
+          NewSheddingRate[j]<-0
         }  
       }
     
 		temp$Status<-DiseaseStatus
     temp$Count<-NewCount
-    temp$Dose<-NewDose
+    temp$SheddingRate<-NewSheddingRate
 	#-- 3) Update individual ages and "Alive" statuses
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
@@ -252,7 +252,7 @@ flag=1
 			NewRows$Subgroup<-rep("Lamb",NewBirths)
       NewRows$Mother<-NewMoms
       NewRows$HasLamb<-rep(0,NewBirths)
-      NewRows$Dose<-rep(0,NewBirths)
+      NewRows$SheddingRate<-rep(0,NewBirths)
 
 		}
 	#-- 8) Store temp in StorageList.
