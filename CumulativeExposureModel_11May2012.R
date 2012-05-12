@@ -104,7 +104,17 @@ ewe.check.fun<-function(k,CurrentLambs){
   j<-ifelse(k %in% CurrentMoms,1,0)
   return(j)
 }
+  
+  grp.split.fun<-function(t){
+    gsplit<-ifelse(t %% 365 ==60, 1, 0)
+    return(gsplit)
+  }
  
+  grp.merge.fun<-function(t){
+    gmerge<-ifelse(t %% 365 ==0,1,0)
+    return(gmerge)
+  }
+  
 	#----------------------------------------------------#
 	#------ Individual status update for-loop -----------#
 	#----------------------------------------------------#
