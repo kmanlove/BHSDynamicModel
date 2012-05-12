@@ -190,6 +190,18 @@ flag=1
               NewDoseAtInfection[j]<-1 
               }
   			}
+        
+        #-- from incubatory to acute --#
+        else if (temp$Status[j]=="E"){
+          change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
+          if(change==1){
+            k<-rbinom(1,1,prob=rho)
+            DiseaseStatus[j]<-ifelse(k==1,"A","C")
+          } else {
+          DiseaseStatus[j]<-"E"
+          }
+        }
+        
         #-- Recovery from Acute #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="I"){  #-- can either recover or stay in I. 
 						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Gamma)==1,"R","I")
