@@ -58,14 +58,14 @@ IndividualSIR<-function(timesteps=timesteps,
   RefTS1$SheddingRate<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Mother<-rep(NA,length(RefTS1$Age)) 
-  RefTS1$SpatGrp<-rep(NA,length(RefTS1$Age))
+  RefTS1$SpatGrp<-rep(1,length(RefTS1$Age))
   RefTS1$DoseAtInfection<-rep(NA,length(RefTS1$Age))
   
 	StorageList[[1]][[1]]<-RefTS1
 
 	LambWindow<-c(210,300)	
   
-			SubgroupFun1<-function(k){
+			DemogFun1<-function(k){
 				out<-ifelse(k<=355,"Lamb","Ewe")
 				return(out)
 				}
@@ -118,17 +118,17 @@ flag=1
 
 		Age<-as.numeric(as.character(temp$Age))
 		Sex<-temp$SexRef
-			#-- Classify all individuals to a subgroup, Lamb, Ewe or Ram.
-			temp$Subgroup<-rep(NA,dim(temp)[1])
-			temp$Subgroup<-sapply(Age,SubgroupFun1)
+			#-- Classify all individuals to a demographic group, Lamb, Ewe or Ram.
+			temp$DemogGrp<-rep(NA,dim(temp)[1])
+			temp$DemogGrp<-sapply(Age,DemogFun1)
 
     #-- Loop through all individuals to update disease statuses.
 		DiseaseStatus<-rep(NA,dim(temp)[1])
       NewCount<-rep(NA,dim(temp)[1])
       NewSheddingRate<-rep(NA,dim(temp)[1])
 
-    EweGroup<-subset(temp,Subgroup=="Ewe")
-    LambGroup<-subset(temp,Subgroup=="Lamb")
+    EweGroup<-subset(temp,DemogGrp=="Ewe")
+    LambGroup<-subset(temp,DemogGrp=="Lamb")
     
     LambOpen<-lambtransmission.mod.fun(i)
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
@@ -138,9 +138,9 @@ flag=1
         #-- Transmission
         if(temp$Status[j]=="S"){
           
-          if(temp$Subgroup[j]=="Ewe"){
+          if(temp$DemogGrp[j]=="Ewe"){
               contactsetE<-sum(EweGroup$SheddingRate[sample(1:dim(EweGroup)[1],contactnumber)])
-              lamb<-subset(temp,Subgroup=="Lamb" & Mother==temp$ID[j])
+              lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp$ID[j])
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
  
@@ -159,7 +159,7 @@ flag=1
               contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(LambGroup)[1]==0,
                                  0,
                                  sum(LambGroup$SheddingRate[sample(1:dim(LambGroup)[1],Lambcontactnumber)])))
-              ewe<-subset(temp,Subgroup=="Ewe" & ID==temp$Mother[j])
+              ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp$Mother[j])
               contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
               DiseaseStatus[j]<-ifelse(contactE!=0,"I",
                                        ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
@@ -198,7 +198,7 @@ flag=1
 
 		SurvivalStatus<-rep(NA,dim(temp)[1])
 		for(j in 1:dim(temp)[1]){
-			if(temp$Subgroup[j]=="Lamb"){
+			if(temp$DemogGrp[j]=="Lamb"){
 				SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
 			}
 			else{
@@ -213,7 +213,7 @@ flag=1
 
 		Cause<-rep(NA,dim(temp)[1])
 			for(j in 1:dim(temp)[1]){
-				if(temp$Subgroup[j]=="Lamb"){
+				if(temp$DemogGrp[j]=="Lamb"){
 					Cause[j]<-ifelse(DiseaseStatus[j]=="I" & SurvivalStatus[j]==0,
                            "PN",ifelse(SurvivalStatus[j]==0,
                                        "Other","Alive"))
@@ -237,8 +237,8 @@ flag=1
     NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
 
 	#-- 6) Make death mat of who died in this timestep, and how.
-  	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","Subgroup","Age")
-    DeathMata<-as.data.frame(cbind(temp$StillAlive, temp$Status, temp$Cause,temp$Subgroup,temp$Age))
+  	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","DemogGrp","Age")
+    DeathMata<-as.data.frame(cbind(temp$StillAlive, temp$Status, temp$Cause,temp$DemogGrp,temp$Age))
 		names(DeathMata)<-deathnames
     DeathMat<-subset(DeathMata,StillAlive==0)
 
@@ -251,7 +251,7 @@ flag=1
 			NewRows$StillAlive<-rep(1,NewBirths)
 			NewRows$ID<-(max(temp$ID)+1):(max(temp$ID)+NewBirths)
 			NewRows$Age<-rep(0,NewBirths)
-			NewRows$Subgroup<-rep("Lamb",NewBirths)
+			NewRows$DemogGrp<-rep("Lamb",NewBirths)
       NewRows$Mother<-NewMoms
       NewRows$HasLamb<-rep(0,NewBirths)
       NewRows$SheddingRate<-rep(0,NewBirths)
