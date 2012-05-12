@@ -1,0 +1,38 @@
+\documentclass[fleqn]{article}
+\usepackage{amsmath}
+
+\addtolength{\textwidth}{1.5in}
+\addtolength{\hoffset}{-.75in}
+\addtolength{\textheight}{.5in}
+\addtolength{\voffset}{-.5in}
+
+\begin{document}
+
+\section*{Revised model equations -- May 11, 2012}
+This version of the model assumes that for adults, the system consists for five states: $S$ (susceptible), $E$ (incubatory carrier), $A$ (acutely infected), $C$ (chronically infected), and $R$ (recovered/resistant). Spatiotemporal structuring is imposed by splitting each year into two parts, rut (November 1 - December 30) and not-rut (January 1 - October 30).  During rut, the population operates as a single homogeneous unit, with every individual allowed to contact every other individual.  During the rest of the year, the population is split into two (or more) discrete chunks, with individuals' contacts limited to those individuals in their chunk (computationally, this will be implemented with a mod function identifying season, and a random allocation of individuals into groups on January 1).  After each rut, the chunks will be identified independently of previous groupings (that is, two individuals' presence in the same non-rut group this year has no bearing on their chances of being together during non-rut in future years).  Births occur as a uniformly distributed pulse from May 10 to May 30, again computationally implemented via a mod function.  The transmission rate, $\lambda$, is dependent on the preponderance of the three shedding classes, $E$, $A$, and $C$, as well as the prevalence of susceptible hosts.  Specifically, consider a susceptible individual $i$ at timestep $t$ in group $g$ (group $g$ encompasses the whole population during rut, and is dropped in subsequent notation).  At each timestep, inidividual $i$ contacts a set of other individuals in its group.  Denote this contact set (that is, all individuals contacted by individual $i$ at timestep $t$) as $K_{i,t}$.  Then, $K_{i,t} = \{S_{it_contacts}, E_{it_contacts}, A_{it_contacts}, C_{it_contacts}, R_{it_contacts} \}$, and individual $i$'s $\lambda$ term at the $t^{th}$ timestep is
+
+\[\lambda_{i,t} = 1-exp\{-(E_{it_contacts}\beta_{E}+A_{it_contacts}\beta_{A}+C_{it_contacts}\beta_{C})\}.\]
+
+Further symbology is
+\[\begin{array}{cl}
+b =  & \mbox{birth rate} \\
+\mu =  & \mbox{natural adult mortality rate}\\
+\xi =  & \mbox{transition rate out of incubatory carrier class}\\
+\eta =  & \mbox{transition rate from A to C}\\
+\rho =  & \mbox{proportion of incubatory carriers that become A}\\
+\tau =  & \mbox{transition rate from C to A}\\
+\alpha =  & \mbox{disease-induced mortality in the acute class}\\
+\alpha_{C} =  & \mbox{disease-induced mortality in the chronic class}\\
+\gamma =  & \mbox{transition rate from C to R}\\
+\nu =  & \mbox{transition rate from R to S}\\
+\end{array}\]
+
+Then, the population-level state transitions can be written as follows:
+
+\[S_{t+1,g} = S_{t,g}-(\lambda_{t,g}+\mu)S_{t,g}+\nu R_{t,g}+bN_{t,g},\]
+\[E_{t+1,g} = E_{t,g}-(\xi+\mu)E_{t,g}+\lambda_{t,g}S_{t+1,g},\]
+\[A_{t+1,g} = A_{t,g}-(\mu+\alpha+\eta)A_{t,g}+\xi\rho(E_{t+1,g})+\tau C_{t,g},\]
+\[C_{t+1,g} = C_{t,g}+\xi(1-\rho)E_{t+1,g}+\eta A_{t+1,g} - (\tau+\mu+\alpha_{C}+\gamma)C_{t,g},\]
+\[R_{t+1,g} = R_{t,g} + \gamma C_{t+1,g} - (\nu +\mu)R_{t,g}\]
+
+\end{document}
