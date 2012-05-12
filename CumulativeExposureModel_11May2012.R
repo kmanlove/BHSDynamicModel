@@ -153,7 +153,8 @@ flag=1
         if(temp$Status[j]=="S"){
           
           if(temp$DemogGrp[j]=="Ewe"){
-              contactsetE<-sum(EweGroup$SheddingRate[sample(1:dim(EweGroup)[1],contactnumber)])
+              k<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Ewe")
+              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])
               lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp$ID[j])
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
