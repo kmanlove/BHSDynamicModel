@@ -1,6 +1,7 @@
 require(stats)	
 
 #-- test changes for git. 
+#-- test 2.
 
 IndividualSIR<-function(timesteps=timesteps,
                         BirthRate=BirthRate,
