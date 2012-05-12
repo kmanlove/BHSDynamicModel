@@ -136,6 +136,7 @@ flag=1
 		DiseaseStatus<-rep(NA,dim(temp)[1])
       NewCount<-rep(NA,dim(temp)[1])
       NewSheddingRate<-rep(NA,dim(temp)[1])
+      NewDoseAtInfection<-rep(NA,dim(temp)[1])
 
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
@@ -160,14 +161,18 @@ flag=1
               #-- needs to be an indicator for whether her lamb has PN...?
  
           if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
-            DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
+            # DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
+            DiseaseStatus[j]<-"E"   
             #-- need propchronic to reflect dosage
             NewCount[j]<-temp$Count[j]+1
-            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-          } else {
+            NewDoseAtInfection[j]<-exp(-contactsetE)
+#            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
+            NewSheddingRate[j]<-chronicdose
+              } else {
                   DiseaseStatus[j]<-"S"
                   NewCount[j]<-temp$Count[j]
                   NewSheddingRate[j]<-0
+                  NewDoseAtInfection[j]<-0
                 }
               
           } else {    #-- for lambs
