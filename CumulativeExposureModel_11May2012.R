@@ -149,19 +149,25 @@ flag=1
         
         #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
-          change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
-          if(change==1){
-            k<-rbinom(1,1,prob=rho)
-            DiseaseStatus[j]<-ifelse(k==1,"I","C")
-            NewCount[j]<-temp$Count[j]
-            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,chronicdose)
-            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
-          } else {
-            DiseaseStatus[j]<-"E"
-            NewCount[j]<-temp$Count[j]
-            NewSheddingRate[j]<-chronicdose
-            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
-          }
+          acutechronic.out<-acutechronic.fun(temp.in,temp)
+          DiseaseStatus[j]<-acutechronic.fun$DisStat.out
+          NewCount[j]<-acutechronic.fun$NewCt.out
+          NewSheddingRate[j]<-acutechronic.fun$NewShedRate.out
+          NewDoseAtInfection[j]<-acutechronic.fun$NewDAI.out
+          
+#          change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
+#          if(change==1){
+#            k<-rbinom(1,1,prob=rho)
+#            DiseaseStatus[j]<-ifelse(k==1,"I","C")
+#            NewCount[j]<-temp$Count[j]
+#            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,chronicdose)
+#            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
+#          } else {
+#            DiseaseStatus[j]<-"E"
+#            NewCount[j]<-temp$Count[j]
+#            NewSheddingRate[j]<-chronicdose
+#            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
+#          }
         }
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 

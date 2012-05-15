@@ -92,3 +92,21 @@ transmission.fun<-function(temp.in,temp){
     		}
       return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
 }
+      
+acutechronic.fun<-function(temp.in,temp){
+    change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
+           if(change==1){
+            k<-rbinom(1,1,prob=rho)
+            DisStat.out<-ifelse(k==1,"I","C")
+            NewCt.out<-temp.in$Count
+            NewShedRate.out<-ifelse(DisStat.out=="I",1,chronicdose)
+            NewDAI.out<-temp.in$DoseAtInfection
+          } else {
+            DisStat.out<-"E"
+            NewCt.out<-temp.in$Count
+            NewShedRate.out<-chronicdose
+            NewDAI.out<-temp.in$DoseAtInfection
+          }
+        }
+    return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
+}
