@@ -225,7 +225,7 @@ flag=1
         Cause[j]<-cause.fun(temp.in)
 #				if(temp$DemogGrp[j]=="Lamb"){
 #					Cause[j]<-ifelse(DiseaseStatus[j]=="I" & SurvivalStatus[j]==0,
-#                           "PN",ifelse(SurvivalStatus[j]==0,
+# cd                           "PN",ifelse(SurvivalStatus[j]==0,
 #                                       "Other","Alive"))	
 #        }
 #				else Cause[j]<-ifelse(SurvivalStatus[j]==1, "Alive",
