@@ -112,31 +112,38 @@ acutechronic.fun<-function(temp.in,temp){
 }
       
       
-survival.fun<-function(temp.in){
-    if(temp.in$DemogGrp=="Lamb"){
-				SurvivalStat.out<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
+survival.fun<-function(temp){
+    SurvivalStatOut<-rep(NA,dim(temp)[1])
+  	for(j in 1:dim(temp)[1]){
+      temp.in<-temp[j,]
+       if(temp.in$DemogGrp=="Lamb"){
+				SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
 			}
 			else{
-					SurvivalStat.out<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",
+					SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",
                                    PNEweSurvProbs[temp.in$Age],
                                    ifelse(temp.in$Status=="C",
                                          ChronicEweSurvProbs[temp.in$Age],
                                          EweSurvProbs[temp.in$Age])))==1,1,0)
 			}
+  	}
     return(SurvivalStatOut)
 }
       
-cause.fun<-function(temp.in){
-  
+cause.fun<-function(temp){
+  	CauseOut<-rep(NA,dim(temp)[1])
+			for(j in 1:dim(temp)[1]){
+        temp.in<-temp[j,]  
   			if(temp.in$DemogGrp=="Lamb"){
-					CauseOut<-ifelse(temp.in$Status=="I" & temp.in$StillAlive==0,
+					CauseOut[j]<-ifelse(temp.in$Status=="I" & temp.in$StillAlive==0,
                            "PN",ifelse(temp.in$StillAlive==0,
                                        "Other","Alive"))
 				}
-				else CauseOut<-ifelse(temp.in$StillAlive==1, "Alive",
+				else CauseOut[j]<-ifelse(temp.in$StillAlive==1, "Alive",
                               ifelse(temp.in$Status=="I" & rbinom(1,1,prob=InPNAdultSurvAdj)==1,
                                      "PN","Other"))
-        return(CauseOut)
+			}
+    return(CauseOut)
 }
       
 birth.fun<-function(i,temp){

@@ -108,43 +108,6 @@ flag=1
           NewCount[j]<-transmit.out$NewCt.out
           NewDoseAtShedding[j]<-transmit.out$NewDAI.out
           NewSheddingRate[j]<-transmit.out$NewShedRate.out
-          
-#          if(temp$DemogGrp[j]=="Ewe"){
-#              k<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Ewe")
-#              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])
-#              lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp$ID[j])
-#              contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
-              #-- needs to be an indicator for whether her lamb has PN...?
-# 
-#          if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
-            # DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
-#            DiseaseStatus[j]<-"E"   
-            #-- need propchronic to reflect dosage
-#            NewCount[j]<-temp$Count[j]+1
-#            NewDoseAtInfection[j]<-exp(-contactsetE)
-#            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-#            NewSheddingRate[j]<-chronicdose
-#              } else {
-#                  DiseaseStatus[j]<-"S"
-#                  NewCount[j]<-temp$Count[j]
-#                  NewSheddingRate[j]<-0
-#                  NewDoseAtInfection[j]<-0
-#                }
-              
-#          } else {    #-- for lambs
-#              l<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Lamb")
-#              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
-#                                 0,
-#                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber)])))
-#              ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp$Mother[j])
-#              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
-#              DiseaseStatus[j]<-ifelse(contactE!=0,"I",
-#                                       ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
-#                                              "I","S"))
-#              NewCount[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
-#              NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-#              NewDoseAtInfection[j]<-1 
-#              }
  	 		}
         
         #-- from incubatory to acute or chronic --#
@@ -154,20 +117,6 @@ flag=1
           NewCount[j]<-acutechronic.fun$NewCt.out
           NewSheddingRate[j]<-acutechronic.fun$NewShedRate.out
           NewDoseAtInfection[j]<-acutechronic.fun$NewDAI.out
-          
-#          change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
-#          if(change==1){
-#            k<-rbinom(1,1,prob=rho)
-#            DiseaseStatus[j]<-ifelse(k==1,"I","C")
-#            NewCount[j]<-temp$Count[j]
-#            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,chronicdose)
-#            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
-#          } else {
-#            DiseaseStatus[j]<-"E"
-#            NewCount[j]<-temp$Count[j]
-#            NewSheddingRate[j]<-chronicdose
-#            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
-#          }
         }
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 
@@ -201,80 +150,34 @@ flag=1
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
 
-		SurvivalStatus<-rep(NA,dim(temp)[1])
-		for(j in 1:dim(temp)[1]){
-      temp.in<-temp[j,]
-      SurvivalStatus[j]<-survival.fun(temp.in)
-#			if(temp$DemogGrp[j]=="Lamb"){
-#				SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
-#			}
-#			else{
-#					SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",
-#                                   PNEweSurvProbs[temp$Age[j]],
-#                                   ifelse(temp$Status[j]=="C",
-#                                         ChronicEweSurvProbs[temp$Age[j]],
-#                                         EweSurvProbs[temp$Age[j]])))==1,1,0)
-#			}
-		}
+#		SurvivalStatus<-rep(NA,dim(temp)[1])
+#		for(j in 1:dim(temp)[1]){
+#      temp.in<-temp[j,]
+#      SurvivalStatus[j]<-survival.fun(temp.in)
+#		}
+# 
+#		temp$StillAlive<-SurvivalStatus
     
-		temp$StillAlive<-SurvivalStatus
-
-		Cause<-rep(NA,dim(temp)[1])
-			for(j in 1:dim(temp)[1]){
-        temp.in<-temp[j,]
-        Cause[j]<-cause.fun(temp.in)
-#				if(temp$DemogGrp[j]=="Lamb"){
-#					Cause[j]<-ifelse(DiseaseStatus[j]=="I" & SurvivalStatus[j]==0,
-# cd                           "PN",ifelse(SurvivalStatus[j]==0,
-#                                       "Other","Alive"))	
-#        }
-#				else Cause[j]<-ifelse(SurvivalStatus[j]==1, "Alive",
-#                              ifelse(DiseaseStatus[j]=="I" & rbinom(1,1,prob=InPNAdultSurvAdj)==1,
-#                                     "PN","Other"))
-			}
-		temp$Cause<-Cause
+    temp$StillAlive<-survival.fun(temp)
+    
+#		Cause<-rep(NA,dim(temp)[1])
+#			for(j in 1:dim(temp)[1]){
+#        temp.in<-temp[j,]
+#        Cause[j]<-cause.fun(temp.in)
+#			}
+#		temp$Cause<-Cause
+    temp$Cause<-cause.fun(temp)
 
 	#-- 5) Generate new individuals through birth process.
     NewBirths<-birth.fun(i,temp)
-#    BirthWindow<-birth.mod.fun(i)
-#		NumPotentialMoms<-ifelse(BirthWindow==1,
-#                             dim(subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0))[1],0)
-#    PotentialMoms<-subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0)
-    
-#    #-- pick set of potential moms to give birth. --#
-#    NumNewMoms<-BirthRate*K/(K+dim(temp)[1])*NumPotentialMoms
-#    momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
-#    NewMoms<-PotentialMoms[momsample,]$ID
-#    MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
-#    temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
-#    NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
 
 	#-- 6) Make death mat of who died in this timestep, and how.
   	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","DemogGrp","Age")
     DeathMata<-as.data.frame(cbind(temp$StillAlive, temp$Status, temp$Cause,temp$DemogGrp,temp$Age))
 		names(DeathMata)<-deathnames
     DeathMat<-subset(DeathMata,StillAlive==0)
-
-	#-- 7) Characterize new births
-#		NewRows<-data.frame(matrix(NA,nrow=NewBirths,ncol=dim(temp)[2]))
-#		names(NewRows)<-names(temp)
-#		if(NewBirths!=0){
-#			NewRows$SexRef<-rbinom(NewBirths,1,SexRatio)
-#			NewRows$Status<-rep("S",NewBirths)
-#			NewRows$StillAlive<-rep(1,NewBirths)
-#			NewRows$ID<-(max(temp$ID)+1):(max(temp$ID)+NewBirths)
-#			NewRows$Age<-rep(0,NewBirths)
-#			NewRows$DemogGrp<-rep("Lamb",NewBirths)
-#      NewRows$Mother<-NewMoms
-#      NewRows$HasLamb<-rep(0,NewBirths)
-#      NewRows$SheddingRate<-rep(0,NewBirths)
-#      NewRows$DoseAtInfection<-rep(NA,NewBirths)
-#      NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
-
-#		}
-	#-- 8) Store temp in StorageList.
-#  StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewRows)),
-#                         DeathMat=data.frame(DeathMat))
+    
+	#-- 7) Store temp in StorageList.
   StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewBirths)),
                          DeathMat=data.frame(DeathMat))
   levels(StorageList[[i]][[1]]$Status)<-c("S","I","C","R")
