@@ -51,7 +51,8 @@ ewe.check.fun<-function(k,CurrentLambs){
   }
  
       
-transmission.fun<-function(temp.in,temp,SpatGrp.in){
+transmission.fun<-function(temp.in,temp){
+        SpatGrp.in<-temp.in$SpatGrp
           if(temp.in$DemogGrp=="Ewe"){
               k<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Ewe")
               contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])

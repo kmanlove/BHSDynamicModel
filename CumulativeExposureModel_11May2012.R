@@ -100,47 +100,52 @@ flag=1
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
     
     for(j in 1:dim(temp)[1]){
-      
+        temp.in<-temp[j,]
         #-- Transmission
         if(temp$Status[j]=="S"){
+          transmit.out<-transmission.fun(temp.in,temp)
+          DiseaseStatus[j]<-transmit.out$DisStat.out
+          NewCount[j]<-transmit.out$NewCt.out
+          NewDoseAtShedding[j]<-transmit.out$NewDAI.out
+          NewSheddingRate[j]<-transmit.out$NewShedRate.out
           
-          if(temp$DemogGrp[j]=="Ewe"){
-              k<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Ewe")
-              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])
-              lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp$ID[j])
-              contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
+#          if(temp$DemogGrp[j]=="Ewe"){
+#              k<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Ewe")
+#              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])
+#              lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp$ID[j])
+#              contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
- 
-          if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
+# 
+#          if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
             # DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
-            DiseaseStatus[j]<-"E"   
+#            DiseaseStatus[j]<-"E"   
             #-- need propchronic to reflect dosage
-            NewCount[j]<-temp$Count[j]+1
-            NewDoseAtInfection[j]<-exp(-contactsetE)
+#            NewCount[j]<-temp$Count[j]+1
+#            NewDoseAtInfection[j]<-exp(-contactsetE)
 #            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-            NewSheddingRate[j]<-chronicdose
-              } else {
-                  DiseaseStatus[j]<-"S"
-                  NewCount[j]<-temp$Count[j]
-                  NewSheddingRate[j]<-0
-                  NewDoseAtInfection[j]<-0
-                }
+#            NewSheddingRate[j]<-chronicdose
+#              } else {
+#                  DiseaseStatus[j]<-"S"
+#                  NewCount[j]<-temp$Count[j]
+#                  NewSheddingRate[j]<-0
+#                  NewDoseAtInfection[j]<-0
+#                }
               
-          } else {    #-- for lambs
-              l<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Lamb")
-              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
-                                 0,
-                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber)])))
-              ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp$Mother[j])
-              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
-              DiseaseStatus[j]<-ifelse(contactE!=0,"I",
-                                       ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
-                                              "I","S"))
-              NewCount[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
-              NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
-              NewDoseAtInfection[j]<-1 
-              }
-  			}
+#          } else {    #-- for lambs
+#              l<-subset(temp, SpatGrp==SpatGrp[j] & DemogGrp=="Lamb")
+#              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
+#                                 0,
+#                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber)])))
+#              ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp$Mother[j])
+#              contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
+#              DiseaseStatus[j]<-ifelse(contactE!=0,"I",
+#                                       ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
+#                                              "I","S"))
+#              NewCount[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
+#              NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
+#              NewDoseAtInfection[j]<-1 
+#              }
+ 	 		}
         
         #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
