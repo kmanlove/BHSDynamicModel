@@ -110,3 +110,18 @@ acutechronic.fun<-function(temp.in,temp){
         }
     return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
 }
+      
+      
+survival.fun<-function(temp.in){
+    if(temp.in$DemogGrp=="Lamb"){
+				SurvivalStat.out<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
+			}
+			else{
+					SurvivalStat.out<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",
+                                   PNEweSurvProbs[temp.in$Age],
+                                   ifelse(temp.in$Status=="C",
+                                         ChronicEweSurvProbs[temp.in$Age],
+                                         EweSurvProbs[temp.in$Age])))==1,1,0)
+			}
+    return(SurvivalStatOut)
+}

@@ -196,23 +196,27 @@ flag=1
 		temp$Status<-DiseaseStatus
     temp$Count<-NewCount
     temp$SheddingRate<-NewSheddingRate
+    
 	#-- 3) Update individual ages and "Alive" statuses
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
 
 		SurvivalStatus<-rep(NA,dim(temp)[1])
 		for(j in 1:dim(temp)[1]){
-			if(temp$DemogGrp[j]=="Lamb"){
-				SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
-			}
-			else{
-					SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",
-                                   PNEweSurvProbs[temp$Age[j]],
-                                   ifelse(temp$Status[j]=="C",
-                                         ChronicEweSurvProbs[temp$Age[j]],
-                                         EweSurvProbs[temp$Age[j]])))==1,1,0)
-			}
+      temp.in<-temp[j,]
+      SurvivalStatus[j]<-survival.fun(temp.in)
+#			if(temp$DemogGrp[j]=="Lamb"){
+#				SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
+#			}
+#			else{
+#					SurvivalStatus[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",
+#                                   PNEweSurvProbs[temp$Age[j]],
+#                                   ifelse(temp$Status[j]=="C",
+#                                         ChronicEweSurvProbs[temp$Age[j]],
+#                                         EweSurvProbs[temp$Age[j]])))==1,1,0)
+#			}
 		}
+    
 		temp$StillAlive<-SurvivalStatus
 
 		Cause<-rep(NA,dim(temp)[1])
