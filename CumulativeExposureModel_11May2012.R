@@ -1,9 +1,6 @@
 require(stats)	
 source("work/StatProjects/Raina/sheep/Papers/DynamicModel/Code/IndividualTrackingModel/TwoSeasonModels_11May2012/TwoSeasonsGitRepo/SourceFunctions_15May2012")
 
-#-- test changes for git. 
-#-- test 2.
-
 IndividualSIR<-function(timesteps=timesteps,
                         BirthRate=BirthRate,
                         SexRatio=SexRatio,
@@ -85,9 +82,9 @@ flag=1
 
     #-- Loop through all individuals to update disease statuses.
 		DiseaseStatus<-rep(NA,dim(temp)[1])
-      NewCount<-rep(NA,dim(temp)[1])
-      NewSheddingRate<-rep(NA,dim(temp)[1])
-      NewDoseAtInfection<-rep(NA,dim(temp)[1])
+    NewCount<-rep(NA,dim(temp)[1])
+    NewSheddingRate<-rep(NA,dim(temp)[1])
+    NewDoseAtInfection<-rep(NA,dim(temp)[1])
 
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
@@ -149,38 +146,22 @@ flag=1
 	#-- 3) Update individual ages and "Alive" statuses
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
-
-#		SurvivalStatus<-rep(NA,dim(temp)[1])
-#		for(j in 1:dim(temp)[1]){
-#      temp.in<-temp[j,]
-#      SurvivalStatus[j]<-survival.fun(temp.in)
-#		}
-# 
-#		temp$StillAlive<-SurvivalStatus
-    
     temp$StillAlive<-survival.fun(temp)
-    
-#		Cause<-rep(NA,dim(temp)[1])
-#			for(j in 1:dim(temp)[1]){
-#        temp.in<-temp[j,]
-#        Cause[j]<-cause.fun(temp.in)
-#			}
-#		temp$Cause<-Cause
     temp$Cause<-cause.fun(temp)
 
-	#-- 5) Generate new individuals through birth process.
+	#-- 4) Generate new individuals through birth process.
     NewBirths<-birth.fun(i,temp)
 
-	#-- 6) Make death mat of who died in this timestep, and how.
+	#-- 5) Make death mat of who died in this timestep, and how.
   	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","DemogGrp","Age")
     DeathMata<-as.data.frame(cbind(temp$StillAlive, temp$Status, temp$Cause,temp$DemogGrp,temp$Age))
 		names(DeathMata)<-deathnames
     DeathMat<-subset(DeathMata,StillAlive==0)
     
-	#-- 7) Store temp in StorageList.
+	#-- 6) Store temp in StorageList.
   StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewBirths)),
                          DeathMat=data.frame(DeathMat))
-  levels(StorageList[[i]][[1]]$Status)<-c("S","I","C","R")
+  levels(StorageList[[i]][[1]]$Status)<-c("S","E","I","C","R")
     flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))
     +as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["C"])==TRUE,0,1))
 	}
