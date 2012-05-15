@@ -221,14 +221,16 @@ flag=1
 
 		Cause<-rep(NA,dim(temp)[1])
 			for(j in 1:dim(temp)[1]){
-				if(temp$DemogGrp[j]=="Lamb"){
-					Cause[j]<-ifelse(DiseaseStatus[j]=="I" & SurvivalStatus[j]==0,
-                           "PN",ifelse(SurvivalStatus[j]==0,
-                                       "Other","Alive"))
-				}
-				else Cause[j]<-ifelse(SurvivalStatus[j]==1, "Alive",
-                              ifelse(DiseaseStatus[j]=="I" & rbinom(1,1,prob=InPNAdultSurvAdj)==1,
-                                     "PN","Other"))
+        temp.in<-temp[j,]
+        Cause[j]<-cause.fun(temp.in)
+#				if(temp$DemogGrp[j]=="Lamb"){
+#					Cause[j]<-ifelse(DiseaseStatus[j]=="I" & SurvivalStatus[j]==0,
+#                           "PN",ifelse(SurvivalStatus[j]==0,
+#                                       "Other","Alive"))	
+#        }
+#				else Cause[j]<-ifelse(SurvivalStatus[j]==1, "Alive",
+#                              ifelse(DiseaseStatus[j]=="I" & rbinom(1,1,prob=InPNAdultSurvAdj)==1,
+#                                     "PN","Other"))
 			}
 		temp$Cause<-Cause
 

@@ -125,3 +125,16 @@ survival.fun<-function(temp.in){
 			}
     return(SurvivalStatOut)
 }
+      
+cause.fun<-function(temp.in){
+  
+  			if(temp.in$DemogGrp=="Lamb"){
+					CauseOut<-ifelse(temp.in$Status=="I" & temp.in$StillAlive==0,
+                           "PN",ifelse(temp.in$StillAlive==0,
+                                       "Other","Alive"))
+				}
+				else CauseOut<-ifelse(temp.in$StillAlive==1, "Alive",
+                              ifelse(temp.in$Status=="I" & rbinom(1,1,prob=InPNAdultSurvAdj)==1,
+                                     "PN","Other"))
+        return(CauseOut)
+}
