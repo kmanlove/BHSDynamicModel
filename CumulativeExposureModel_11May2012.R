@@ -1,4 +1,5 @@
 require(stats)	
+source("work/StatProjects/Raina/sheep/Papers/DynamicModel/Code/IndividualTrackingModel/TwoSeasonModels_11May2012/TwoSeasonsGitRepo/SourceFunctions_15May2012")
 
 #-- test changes for git. 
 #-- test 2.
@@ -64,56 +65,6 @@ IndividualSIR<-function(timesteps=timesteps,
 	StorageList[[1]][[1]]<-RefTS1
 
 	LambWindow<-c(210,300)	
-  
-			DemogFun1<-function(k){
-				out<-ifelse(k<=355,"Lamb","Ewe")
-				return(out)
-				}
-
-			StatusFun1<-function(k){
-				out<-ifelse(k=="C","I",k)
-				return(out)
-			}
-
-birth.mod.fun<-function(t){
-  b<-ifelse(t %% 365==209,1,0)
-  return(b)
-}
-
-aging.mod.fun<-function(t){
-  b<-ifelse(t %% 365==243,1,0)
-  return(b)
-}
-  
-lambtransmission.mod.fun<-function(t){
-  b<-ifelse(t %% 365 >= 210 & t %% 365 <=300, 1, 0)
-  return(b)
-}  
-  
-mother.fun<-function(k,NewMom){
-  j<-ifelse(k %in% NewMom,1,0)
-  return(j)
-}  
-  
-lamb.check.fun<-function(k,CurrentMoms){
-  j<-ifelse(k %in% CurrentMoms,1,0)
-  return(j)
-}
-  
-ewe.check.fun<-function(k,CurrentLambs){
-  j<-ifelse(k %in% CurrentMoms,1,0)
-  return(j)
-}
-  
-  grp.split.fun<-function(t){
-    gsplit<-ifelse(t %% 365 ==60, 1, 0)
-    return(gsplit)
-  }
- 
-  grp.merge.fun<-function(t){
-    gmerge<-ifelse(t %% 365 ==0,1,0)
-    return(gmerge)
-  }
   
 	#----------------------------------------------------#
 	#------ Individual status update for-loop -----------#
@@ -191,7 +142,7 @@ flag=1
               }
   			}
         
-        #-- from incubatory to acute --#
+        #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
           change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
           if(change==1){
@@ -214,7 +165,9 @@ flag=1
             NewCount[j]<-temp$Count[j]
             NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
 					}
-        #-- Recovery/retention in Chronic #-- maybe add death from acute as well. 
+        #-- need to add transition from acute to chronic. 
+        
+        #-- Recovery/retention in Chronic #-- maybe add death from chronic as well. 
         else if(temp$Status[j]=="C"){  
             currentgammaC<-chronicdecrease*temp$Count[j]*GammaChronic   
 						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=1-currentgammaC)==1,"C","R")
