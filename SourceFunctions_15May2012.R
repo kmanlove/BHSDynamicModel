@@ -176,3 +176,22 @@ birth.fun<-function(i,temp){
       NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
   return(NewRows)
 }
+    
+analysis.fun<-function(loop.output){
+  persistence<-table(unlist(lapply(loop.output,is.null)))["FALSE"]
+  
+  N<-ChronicCount<-AcuteCount<-SCount<-RCount<-mortality<-rep(NA,persistence)
+	for(j in 2:persistence){
+    mortality[j]<-dim(loop.output[[j]]$DeathMat)[1]
+		N[j]<-dim(loop.output[[j]]$TimestepData)[1]
+		ChronicCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["C"])==TRUE,
+                            0,table(loop.output[[j]]$TimestepData$Status)["C"])
+		AcuteCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["I"])==TRUE,
+                          0,table(loop.output[[j]]$TimestepData$Status)["I"])
+  	SCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["S"])==TRUE,
+                      0,table(loop.output[[j]]$TimestepData$Status)["S"])
+    RCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["R"])==TRUE,
+                      0,table(loop.output[[j]]$TimestepData$Status)["R"])
+	}
+  return(list(N=N,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=Scount,RCount=RCount,mortality=mortality,persistence=persistence))
+}

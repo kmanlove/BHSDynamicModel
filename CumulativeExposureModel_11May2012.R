@@ -165,21 +165,26 @@ flag=1
     flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))
     +as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["C"])==TRUE,0,1))
 	}
-	persistence<-table(unlist(lapply(StorageList,is.null)))["FALSE"]
-
-  N<-ChronicCount<-AcuteCount<-SCount<-RCount<-mortality<-rep(NA,persistence)
-	for(j in 2:persistence){
-    mortality[j]<-dim(StorageList[[j]]$DeathMat)[1]
-		N[j]<-dim(StorageList[[j]]$TimestepData)[1]
-		ChronicCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["C"])==TRUE,
-                            0,table(StorageList[[j]]$TimestepData$Status)["C"])
-		AcuteCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["I"])==TRUE,
-                          0,table(StorageList[[j]]$TimestepData$Status)["I"])
-  	SCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["S"])==TRUE,
-                      0,table(StorageList[[j]]$TimestepData$Status)["S"])
-    RCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["R"])==TRUE,
-                      0,table(StorageList[[j]]$TimestepData$Status)["R"])
-	}
+  
+  output.analysis<-analysis.fun(StorageList)
+  persistence<-output.analysis$persistence; N<-output.analysis$N
+  ChronicCount<-output.analysis$ChronicCount;AcuteCount<-output.analysis$AcuteCount;SCount<-output.analysis$SCount
+  RCount<-output.analysis$RCount; mortality<-output.analysis$mortality
+#	persistence<-table(unlist(lapply(StorageList,is.null)))["FALSE"]
+#
+#  N<-ChronicCount<-AcuteCount<-SCount<-RCount<-mortality<-rep(NA,persistence)
+#	for(j in 2:persistence){
+#    mortality[j]<-dim(StorageList[[j]]$DeathMat)[1]
+#		N[j]<-dim(StorageList[[j]]$TimestepData)[1]
+#		ChronicCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["C"])==TRUE,
+#                            0,table(StorageList[[j]]$TimestepData$Status)["C"])
+#		AcuteCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["I"])==TRUE,
+#                          0,table(StorageList[[j]]$TimestepData$Status)["I"])
+#  	SCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["S"])==TRUE,
+#                      0,table(StorageList[[j]]$TimestepData$Status)["S"])
+#    RCount[j]<-ifelse(is.na(table(StorageList[[j]]$TimestepData$Status)["R"])==TRUE,
+#                      0,table(StorageList[[j]]$TimestepData$Status)["R"])
+#	}
 
 	return(list(persistence=persistence,
               ChronicCount=ChronicCount,
