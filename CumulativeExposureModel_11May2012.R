@@ -2,24 +2,27 @@ require(stats)
 
 IndividualSIR<-function(timesteps=timesteps,
                         BirthRate=BirthRate,
+                        eta=eta,
+                        xi=xi,
+                        rho=rho,
                         SexRatio=SexRatio,
                         n=n,
                         InPNAdultSurvAdj=InPNAdultSurvAdj,
                         InPNLambSurvProb=InPNLambSurvProb,
                         InLambSurvProb=InLambSurvProb,
-                        Gamma=Gamma,Nu=Nu,
+                        Gamma=Gamma,
+                        Nu=Nu,
                         GammaChronic=GammaChronic,
                         Alpha=Alpha,
                         AlphaLamb=AlphaLamb,
                         AlphaChronic=AlphaChronic,
                         contactnumber=contactnumber,
-                        LambForce=LambForce,
                         LambcontactnumberIn=LambcontactnumberIn,
                         chronicdose=chronicdose,
                         LambTransmissionProb=LambTransmissionProb,
-                        LambEweTranmissionProb,
                         PropRecovered,
-                        chronicdecrease){
+                        chronicdecrease,
+                        ngroups=ngroups){
   
 	StorageList<-vector("list",timesteps)	
 	ID<-1:n		
@@ -55,6 +58,7 @@ IndividualSIR<-function(timesteps=timesteps,
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Mother<-rep(NA,length(RefTS1$Age)) 
   RefTS1$SpatGrp<-rep(1,length(RefTS1$Age))
+  RefTS1$SpatGrpSeason<-ceiling(runif(length(RefTS1$Age),min=0,max=ngroups))
   RefTS1$DoseAtInfection<-rep(NA,length(RefTS1$Age))
   
 	StorageList[[1]][[1]]<-RefTS1
@@ -87,31 +91,33 @@ flag=1
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
     
-    SpatGrpNew<-rep(NA,dim(temp)[1])
-    SpatGrpNew<-ifelse(t %% 365 <= 60, rep(1,dim(temp)[1]),ifelse(t %% 365 == 61, ceiling(runif(dim(temp)[1],min=0,max=ngroups)),temp$SpatGrp))
-    temp$SpatGrp<-SpatGrpNew
+#    SpatGrpNew<-rep(NA,dim(temp)[1])
+#    SpatGrpNew<-ifelse(i %% 365 <= 60, rep(1,dim(temp)[1]),ifelse(i %% 365 == 61, ceiling(runif(dim(temp)[1],min=0,max=ngroups)),temp$SpatGrp))
+#
+#    temp$SpatGrp<-SpatGrpNew
     
     LambOpen<-lambtransmission.mod.fun(i)
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
+    season<-ifelse(i %% 365 <=60, 0,1)
     
     for(j in 1:dim(temp)[1]){
         temp.in<-temp[j,]
         #-- Transmission
         if(temp$Status[j]=="S"){
-          transmit.out<-transmission.fun(temp.in,temp)
+          transmit.out<-transmission.fun(season,temp.in,temp,contactnumber=contactnumber,lambcontactnumber=lambcontactnumber,LambOpen=LambOpen,LambTransmissionProb=LambTransmissionProb,chronicdose=chronicdose)
           DiseaseStatus[j]<-transmit.out$DisStat.out
           NewCount[j]<-transmit.out$NewCt.out
-          NewDoseAtShedding[j]<-transmit.out$NewDAI.out
+          NewDoseAtInfection[j]<-transmit.out$NewDAI.out
           NewSheddingRate[j]<-transmit.out$NewShedRate.out
  	 		}
         
         #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
-          acutechronic.out<-acutechronic.fun(temp.in,temp)
-          DiseaseStatus[j]<-acutechronic.fun$DisStat.out
-          NewCount[j]<-acutechronic.fun$NewCt.out
-          NewSheddingRate[j]<-acutechronic.fun$NewShedRate.out
-          NewDoseAtInfection[j]<-acutechronic.fun$NewDAI.out
+          acutechronic.out<-acutechronic.fun(temp.in,temp,chronicdose=chronicdose,xi=xi)
+          DiseaseStatus[j]<-acutechronic.out$DisStat.out
+          NewCount[j]<-acutechronic.out$NewCt.out
+          NewSheddingRate[j]<-acutechronic.out$NewShedRate.out
+          NewDoseAtInfection[j]<-acutechronic.out$NewDAI.out
         }
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 
@@ -135,6 +141,7 @@ flag=1
           NewCount[j]<-temp$Count[j]
           NewSheddingRate[j]<-0
         }  
+#        print(j)
       }
     
 		temp$Status<-DiseaseStatus
@@ -144,11 +151,11 @@ flag=1
 	#-- 3) Update individual ages and "Alive" statuses
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
-    temp$StillAlive<-survival.fun(temp)
-    temp$Cause<-cause.fun(temp)
+    temp$StillAlive<-survival.fun(temp,PNLambSurvProb,PNEweSurvProbs,ChronicEweSurvProbs,EweSurvProbs,LambSurvProb)
+    temp$Cause<-cause.fun(temp,InPNAdultSurvAdj)
 
 	#-- 4) Generate new individuals through birth process.
-    NewBirths<-birth.fun(i,temp)
+    NewBirths<-birth.fun(i,temp,BirthRate)
 
 	#-- 5) Make death mat of who died in this timestep, and how.
   	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","DemogGrp","Age")
@@ -162,6 +169,7 @@ flag=1
   levels(StorageList[[i]][[1]]$Status)<-c("S","E","I","C","R")
     flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))
     +as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["C"])==TRUE,0,1))
+#    print(i)
 	}
   
   #-- Analyze for-loop output --#

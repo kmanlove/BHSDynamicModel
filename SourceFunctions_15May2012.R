@@ -51,11 +51,11 @@ ewe.check.fun<-function(k,CurrentLambs){
   }
  
       
-transmission.fun<-function(temp.in,temp){
-        SpatGrp.in<-temp.in$SpatGrp
+transmission.fun<-function(season,temp.in,temp,contactnumber,lambcontactnumber,LambOpen,LambTransmissionProb,chronicdose=chronicdose){
+        SpatGrp.in<-ifelse(season==0,temp.in$SpatGrp,temp.in$SpatGrpSeason)
           if(temp.in$DemogGrp=="Ewe"){
               k<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Ewe")
-              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber)])
+              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber,replace=T)])
               lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp.in$ID)
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
@@ -79,7 +79,7 @@ transmission.fun<-function(temp.in,temp){
               l<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Lamb")
               contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
                                  0,
-                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber)])))
+                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber,replace=T)])))
               ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp.in$Mother)
               contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
               DisStat.out<-ifelse(contactE!=0,"I",
@@ -93,7 +93,7 @@ transmission.fun<-function(temp.in,temp){
     		}
 
       
-acutechronic.fun<-function(temp.in,temp){
+acutechronic.fun<-function(temp.in,temp,chronicdose,xi){
     change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
            if(change==1){
             k<-rbinom(1,1,prob=rho)
@@ -112,25 +112,37 @@ acutechronic.fun<-function(temp.in,temp){
 }
       
       
-survival.fun<-function(temp){
-    SurvivalStatOut<-rep(NA,dim(temp)[1])
+survival.fun<-function(temp,PNLambSurvProb,PNEweSurvProbs,ChronicEweSurvProbs,EweSurvProbs,LambSurvProb){
+    SurvivalStat.out<-rep(NA,dim(temp)[1])
   	for(j in 1:dim(temp)[1]){
-      temp.in<-temp[j,]
-       if(temp.in$DemogGrp=="Lamb"){
-				SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
+#      temp.in<-temp[j,]
+#       if(temp.in$DemogGrp=="Lamb"){
+#				SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
+#			}
+#			else{
+#					SurvivalStat.out[j]<-ifelse(rbinom(1,1,prob=(ifelse(temp.in$Status=="I",
+#                                   PNEweSurvProbs[temp.in$Age],
+#                                   ifelse(temp.in$Status=="C",
+#                                         ChronicEweSurvProbs[temp.in$Age],
+#                                         EweSurvProbs[temp.in$Age]))))==1,1,0)
+#			}
+          if(temp$DemogGrp[j]=="Lamb"){
+  			SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNLambSurvProb,LambSurvProb))==1,1,0)
 			}
-			else{
-					SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp.in$Status=="I",
-                                   PNEweSurvProbs[temp.in$Age],
-                                   ifelse(temp.in$Status=="C",
-                                         ChronicEweSurvProbs[temp.in$Age],
-                                         EweSurvProbs[temp.in$Age])))==1,1,0)
-			}
+			else if(temp$Status[j]=="I"){
+        SurvivalStat.out[j]<-ifelse(rbinom(1,1,PNEweSurvProbs[temp$Age[j]])==1,1,0)
+			} else if(temp$Status[j]=="C"){
+        SurvivalStat.out[j]<-ifelse(rbinom(1,1,ChronicEweSurvProbs[temp$Age[j]])==1,1,0)
+			} else SurvivalStat.out[j]<-ifelse(rbinom(1,1,EweSurvProbs[temp$Age[j]])==1,1,0)
+#					SurvivalStat.out[j]<-ifelse(rbinom(1,1,ifelse(temp$Status[j]=="I",PNEweSurvProbs[temp$Age[j]],ifelse(temp$Status[j]=="C", ChronicEweSurvProbs[temp$Age[j]],EweSurvProbs[temp$Age[j]])))==1,1,0)
+#			}
   	}
-    return(SurvivalStatOut)
+    return(SurvivalStat.out)
 }
       
-cause.fun<-function(temp){
+#      survival.out<-survival.fun(temp=temp,PNLambSurvProb,PNEweSurvProbs,ChronicEweSurvProbs,EweSurvProbs,LambSurvProb)
+      
+cause.fun<-function(temp,InPNAdultSurvAdj){
   	CauseOut<-rep(NA,dim(temp)[1])
 			for(j in 1:dim(temp)[1]){
         temp.in<-temp[j,]  
@@ -146,7 +158,7 @@ cause.fun<-function(temp){
     return(CauseOut)
 }
       
-birth.fun<-function(i,temp){
+birth.fun<-function(i,temp,BirthRate){
     BirthWindow<-birth.mod.fun(i)
     NumPotentialMoms<-ifelse(BirthWindow==1,
                              dim(subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0))[1],0)
@@ -156,7 +168,7 @@ birth.fun<-function(i,temp){
     NumNewMoms<-BirthRate*NumPotentialMoms
     momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
     NewMoms<-PotentialMoms[momsample,]$ID
-    MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
+    MomSpatGrpSeason<-PotentialMoms[momsample,]$SpatGrpSeason
     temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
     NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
       
@@ -173,7 +185,8 @@ birth.fun<-function(i,temp){
       NewRows$HasLamb<-rep(0,NewBirths)
       NewRows$SheddingRate<-rep(0,NewBirths)
       NewRows$DoseAtInfection<-rep(NA,NewBirths)
-      NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
+      NewRows$SpatGrp<-1  #-- they need to be in the same spatial groups as their moms...
+      NewRows$SpatGrpSeason<-MomSpatGrpSeason
 		}
   return(NewRows)
 }
@@ -194,5 +207,5 @@ analysis.fun<-function(loop.output){
     RCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["R"])==TRUE,
                       0,table(loop.output[[j]]$TimestepData$Status)["R"])
 	}
-  return(list(N=N,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=Scount,RCount=RCount,mortality=mortality,persistence=persistence))
+  return(list(N=N,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=SCount,RCount=RCount,mortality=mortality,persistence=persistence))
 }
