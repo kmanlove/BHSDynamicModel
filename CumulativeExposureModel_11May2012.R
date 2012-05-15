@@ -104,7 +104,7 @@ flag=1
         temp.in<-temp[j,]
         #-- Transmission
         if(temp$Status[j]=="S"){
-          transmit.out<-transmission.fun(season,temp.in,temp,contactnumber=contactnumber,lambcontactnumber=lambcontactnumber,LambOpen=LambOpen,LambTransmissionProb=LambTransmissionProb,chronicdose=chronicdose)
+          transmit.out<-transmission.fun(season,temp.in,temp,contactnumber=contactnumber,Lambcontactnumber=Lambcontactnumber,LambOpen=LambOpen,LambTransmissionProb=LambTransmissionProb,chronicdose=chronicdose)
           DiseaseStatus[j]<-transmit.out$DisStat.out
           NewCount[j]<-transmit.out$NewCt.out
           NewDoseAtInfection[j]<-transmit.out$NewDAI.out
@@ -113,7 +113,7 @@ flag=1
         
         #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
-          acutechronic.out<-acutechronic.fun(temp.in,temp,chronicdose=chronicdose,xi=xi)
+          acutechronic.out<-acutechronic.fun(temp.in,temp,chronicdose=chronicdose,xi=xi,rho=rho)
           DiseaseStatus[j]<-acutechronic.out$DisStat.out
           NewCount[j]<-acutechronic.out$NewCt.out
           NewSheddingRate[j]<-acutechronic.out$NewShedRate.out
@@ -122,7 +122,8 @@ flag=1
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="I"){  #-- can either recover or stay in I. 
-						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Gamma)==1,"R","I")
+#						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Gamma)==1,"R","I")
+  					DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Alpha/(1-Alpha)*(eta))==1,"R","I")
             NewCount[j]<-temp$Count[j]
             NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
 					}
@@ -131,9 +132,9 @@ flag=1
         #-- Recovery/retention in Chronic #-- maybe add death from chronic as well. 
         else if(temp$Status[j]=="C"){  
             currentgammaC<-chronicdecrease*temp$Count[j]*GammaChronic   
-						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=1-currentgammaC)==1,"C","R")
+						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=tau)==1,"A",ifelse(rbinom(1,1,prob=gammachronic)==1,"R","C"))
             NewCount[j]<-temp$Count[j]
-            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,0)
+            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,ifelse(DiseaseStatus[j]=="A",1,0))
 					}
         #-- Waning from recovered back to S --#
         else{

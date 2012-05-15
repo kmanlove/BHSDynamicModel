@@ -51,22 +51,19 @@ ewe.check.fun<-function(k,CurrentLambs){
   }
  
       
-transmission.fun<-function(season,temp.in,temp,contactnumber,lambcontactnumber,LambOpen,LambTransmissionProb,chronicdose=chronicdose){
+transmission.fun<-function(season,temp.in,temp,contactnumber,Lambcontactnumber,LambOpen,LambTransmissionProb,chronicdose=chronicdose){
         SpatGrp.in<-ifelse(season==0,temp.in$SpatGrp,temp.in$SpatGrpSeason)
           if(temp.in$DemogGrp=="Ewe"){
               k<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Ewe")
-              contactsetE<-sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber,replace=T)])
+              contactsetE<-ifelse(dim(k)[1]>=1,sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber,replace=T)]),0)
               lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp.in$ID)
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
  
           if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
-            # DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1,"I","C")   
             DisStat.out<-"E"   
-            #-- need propchronic to reflect dosage
             NewCt.out<-temp.in$Count+1
             NewDAI.out<-exp(-contactsetE)
-#            NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,ifelse(DiseaseStatus[j]=="S",0,chronicdose))
             NewShedRate.out<-chronicdose
               } else {
                   DisStat.out<-"S"
@@ -93,7 +90,7 @@ transmission.fun<-function(season,temp.in,temp,contactnumber,lambcontactnumber,L
     		}
 
       
-acutechronic.fun<-function(temp.in,temp,chronicdose,xi){
+acutechronic.fun<-function(temp.in,temp,chronicdose,xi,rho){
     change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
            if(change==1){
             k<-rbinom(1,1,prob=rho)
