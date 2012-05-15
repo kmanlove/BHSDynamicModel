@@ -89,9 +89,9 @@ transmission.fun<-function(temp.in,temp){
               NewShedRate.out<-ifelse(DisStat.out=="I",1,ifelse(DisStat.out=="S",0,chronicdose))
               NewDAI.out<-1 
               }
+              return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
     		}
-      return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
-}
+
       
 acutechronic.fun<-function(temp.in,temp){
     change<-ifelse(rbinom(1,1,prob=xi)==1,1,0)
@@ -107,7 +107,7 @@ acutechronic.fun<-function(temp.in,temp){
             NewShedRate.out<-chronicdose
             NewDAI.out<-temp.in$DoseAtInfection
           }
-        }
+        
     return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
 }
       
@@ -153,7 +153,7 @@ birth.fun<-function(i,temp){
     PotentialMoms<-subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0)
     
     #-- pick set of potential moms to give birth. --#
-    NumNewMoms<-BirthRate*K/(K+dim(temp)[1])*NumPotentialMoms
+    NumNewMoms<-BirthRate*NumPotentialMoms
     momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
     NewMoms<-PotentialMoms[momsample,]$ID
     MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
@@ -174,6 +174,7 @@ birth.fun<-function(i,temp){
       NewRows$SheddingRate<-rep(0,NewBirths)
       NewRows$DoseAtInfection<-rep(NA,NewBirths)
       NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
+		}
   return(NewRows)
 }
     
