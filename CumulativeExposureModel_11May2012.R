@@ -235,18 +235,19 @@ flag=1
 		temp$Cause<-Cause
 
 	#-- 5) Generate new individuals through birth process.
-    BirthWindow<-birth.mod.fun(i)
-		NumPotentialMoms<-ifelse(BirthWindow==1,
-                             dim(subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0))[1],0)
-    PotentialMoms<-subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0)
+    NewBirths<-birth.fun(i,temp)
+#    BirthWindow<-birth.mod.fun(i)
+#		NumPotentialMoms<-ifelse(BirthWindow==1,
+#                             dim(subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0))[1],0)
+#    PotentialMoms<-subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0)
     
-    #-- pick set of potential moms to give birth. --#
-    NumNewMoms<-BirthRate*K/(K+dim(temp)[1])*NumPotentialMoms
-    momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
-    NewMoms<-PotentialMoms[momsample,]$ID
-    MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
-    temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
-    NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
+#    #-- pick set of potential moms to give birth. --#
+#    NumNewMoms<-BirthRate*K/(K+dim(temp)[1])*NumPotentialMoms
+#    momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
+#    NewMoms<-PotentialMoms[momsample,]$ID
+#    MomSpatGrps<-PotentialMoms[momsample,]$SpatGrp
+#    temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
+#    NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
 
 	#-- 6) Make death mat of who died in this timestep, and how.
   	deathnames<-c("StillAlive","DiseaseStatus","CauseOfDeath","DemogGrp","Age")
@@ -255,24 +256,26 @@ flag=1
     DeathMat<-subset(DeathMata,StillAlive==0)
 
 	#-- 7) Characterize new births
-		NewRows<-data.frame(matrix(NA,nrow=NewBirths,ncol=dim(temp)[2]))
-		names(NewRows)<-names(temp)
-		if(NewBirths!=0){
-			NewRows$SexRef<-rbinom(NewBirths,1,SexRatio)
-			NewRows$Status<-rep("S",NewBirths)
-			NewRows$StillAlive<-rep(1,NewBirths)
-			NewRows$ID<-(max(temp$ID)+1):(max(temp$ID)+NewBirths)
-			NewRows$Age<-rep(0,NewBirths)
-			NewRows$DemogGrp<-rep("Lamb",NewBirths)
-      NewRows$Mother<-NewMoms
-      NewRows$HasLamb<-rep(0,NewBirths)
-      NewRows$SheddingRate<-rep(0,NewBirths)
-      NewRows$DoseAtInfection<-rep(NA,NewBirths)
-      NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
+#		NewRows<-data.frame(matrix(NA,nrow=NewBirths,ncol=dim(temp)[2]))
+#		names(NewRows)<-names(temp)
+#		if(NewBirths!=0){
+#			NewRows$SexRef<-rbinom(NewBirths,1,SexRatio)
+#			NewRows$Status<-rep("S",NewBirths)
+#			NewRows$StillAlive<-rep(1,NewBirths)
+#			NewRows$ID<-(max(temp$ID)+1):(max(temp$ID)+NewBirths)
+#			NewRows$Age<-rep(0,NewBirths)
+#			NewRows$DemogGrp<-rep("Lamb",NewBirths)
+#      NewRows$Mother<-NewMoms
+#      NewRows$HasLamb<-rep(0,NewBirths)
+#      NewRows$SheddingRate<-rep(0,NewBirths)
+#      NewRows$DoseAtInfection<-rep(NA,NewBirths)
+#      NewRows$SpatGrp<-MomSpatGrps  #-- they need to be in the same spatial groups as their moms...
 
-		}
+#		}
 	#-- 8) Store temp in StorageList.
-	StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewRows)),
+#  StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewRows)),
+#                         DeathMat=data.frame(DeathMat))
+  StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewBirths)),
                          DeathMat=data.frame(DeathMat))
   levels(StorageList[[i]][[1]]$Status)<-c("S","I","C","R")
     flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))
