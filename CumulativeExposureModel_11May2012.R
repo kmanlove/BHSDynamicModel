@@ -5,6 +5,7 @@ IndividualSIR<-function(timesteps=timesteps,
                         eta=eta,
                         xi=xi,
                         rho=rho,
+                        tau=tau,
                         SexRatio=SexRatio,
                         n=n,
                         InPNAdultSurvAdj=InPNAdultSurvAdj,
@@ -58,9 +59,9 @@ IndividualSIR<-function(timesteps=timesteps,
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Mother<-rep(NA,length(RefTS1$Age)) 
   RefTS1$SpatGrp<-rep(1,length(RefTS1$Age))
-  RefTS1$SpatGrpSeason<-ceiling(runif(length(RefTS1$Age),min=0,max=ngroups))
+  RefTS1$SpatGrpSeason<-floor(runif(length(RefTS1$Age),min=0,max=ngroups))
   RefTS1$DoseAtInfection<-rep(NA,length(RefTS1$Age))
-  
+  RefTS1$Groupsize<-rep(n,length(RefTS1$Age))
 	StorageList[[1]][[1]]<-RefTS1
 
 	LambWindow<-c(210,300)	
@@ -87,6 +88,7 @@ flag=1
     NewCount<-rep(NA,dim(temp)[1])
     NewSheddingRate<-rep(NA,dim(temp)[1])
     NewDoseAtInfection<-rep(NA,dim(temp)[1])
+    groupsizeNew<-rep(NA,dim(temp)[1])
 
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
@@ -100,6 +102,9 @@ flag=1
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
     season<-ifelse(i %% 365 <=60, 0,1)
     
+    #-- store contactsets --#
+    contactsets<-vector("list",dim(temp)[1])
+    
     for(j in 1:dim(temp)[1]){
         temp.in<-temp[j,]
         #-- Transmission
@@ -109,6 +114,12 @@ flag=1
           NewCount[j]<-transmit.out$NewCt.out
           NewDoseAtInfection[j]<-transmit.out$NewDAI.out
           NewSheddingRate[j]<-transmit.out$NewShedRate.out
+          contactsets[[j]]<-transmit.out$contactset
+#          print(season)
+#          print(temp.in$SpatGrpSeason)
+#          print(transmit.out$groupsize)
+#          print(transmit.out$contactset)
+#          print(transmit.out$contactIDs)
  	 		}
         
         #-- from incubatory to acute or chronic --#
@@ -132,7 +143,7 @@ flag=1
         #-- Recovery/retention in Chronic #-- maybe add death from chronic as well. 
         else if(temp$Status[j]=="C"){  
             currentgammaC<-chronicdecrease*temp$Count[j]*GammaChronic   
-						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=tau)==1,"A",ifelse(rbinom(1,1,prob=gammachronic)==1,"R","C"))
+						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=tau)==1,"A",ifelse(rbinom(1,1,prob=GammaChronic)==1,"R","C"))
             NewCount[j]<-temp$Count[j]
             NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,ifelse(DiseaseStatus[j]=="A",1,0))
 					}
@@ -143,11 +154,16 @@ flag=1
           NewSheddingRate[j]<-0
         }  
 #        print(j)
+        #-- record groupsize --#
+        if(season==0){
+          groupsizeNew[j]<-dim(temp)[1]
+        } else groupsizeNew[j]<-dim(subset(temp,SpatGrpSeason==temp$SpatGrpSeason[j]))[1]
       }
     
 		temp$Status<-DiseaseStatus
     temp$Count<-NewCount
     temp$SheddingRate<-NewSheddingRate
+    temp$Groupsize<-groupsizeNew
     
 	#-- 3) Update individual ages and "Alive" statuses
 		NewAge<-as.numeric(as.character(temp$Age))+1
@@ -166,10 +182,10 @@ flag=1
     
 	#-- 6) Store temp in StorageList.
   StorageList[[i]]<-list(TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewBirths)),
-                         DeathMat=data.frame(DeathMat))
+                         DeathMat=data.frame(DeathMat),contactsets=contactsets)
   levels(StorageList[[i]][[1]]$Status)<-c("S","E","I","C","R")
-    flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))
-    +as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["C"])==TRUE,0,1))
+    flag<-as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["I"])==TRUE,0,1))+as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["C"])==TRUE,0,1))+as.numeric(ifelse(is.na(table(StorageList[[i]][[1]]$Status)["E"])==TRUE,0,1))
+
 #    print(i)
 	}
   
@@ -177,13 +193,16 @@ flag=1
   output.analysis<-analysis.fun(StorageList)
   persistence<-output.analysis$persistence; N<-output.analysis$N
   ChronicCount<-output.analysis$ChronicCount;AcuteCount<-output.analysis$AcuteCount;SCount<-output.analysis$SCount
-  RCount<-output.analysis$RCount; mortality<-output.analysis$mortality
+  RCount<-output.analysis$RCount; mortality<-output.analysis$mortality; ECount<-output.analysis$ECount
+  contactsets<-output.analysis$contactsets
 
 	return(list(persistence=persistence,
+              ECount=ECount,
               ChronicCount=ChronicCount,
               AcuteCount=AcuteCount,
               SCount=SCount,
               RCount=RCount,
               N=N,
-              mortality=mortality))
+              mortality=mortality,
+              contactsets=contactsets))
 }

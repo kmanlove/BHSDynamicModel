@@ -52,18 +52,25 @@ ewe.check.fun<-function(k,CurrentLambs){
  
       
 transmission.fun<-function(season,temp.in,temp,contactnumber,Lambcontactnumber,LambOpen,LambTransmissionProb,chronicdose=chronicdose){
-        SpatGrp.in<-ifelse(season==0,temp.in$SpatGrp,temp.in$SpatGrpSeason)
+  SpatGrp.in<-ifelse(season==0,temp.in$SpatGrp,temp.in$SpatGrpSeason)
           if(temp.in$DemogGrp=="Ewe"){
-              k<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Ewe")
-              contactsetE<-ifelse(dim(k)[1]>=1,sum(k$SheddingRate[sample(1:dim(k)[1],contactnumber,replace=T)]),0)
+            if(season==0){
+              k<-subset(temp, DemogGrp=="Ewe")
+            } else k<-subset(temp, SpatGrpSeason=SpatGrp.in)
+                        
+              samp<-sample(1:dim(k)[1],contactnumber,replace=T)
+              contactset<-ifelse(dim(k)[1]>=1,sum(k$SheddingRate[samp]),0)
+              contacts<-k$Status[samp]
+              contactIDs<-k$ID[samp]
+              groupsize<-dim(k)[1]
               lamb<-subset(temp,DemogGrp=="Lamb" & Mother==temp.in$ID)
               contactL<-ifelse(dim(lamb)[1]==0,0,ifelse(lamb$Status=="I",1,0))  
               #-- needs to be an indicator for whether her lamb has PN...?
  
-          if(rbinom(1,1,prob=(1-exp(-(contactsetE))))==1){
+          if(rbinom(1,1,prob=(1-exp(-(contactset))))==1){
             DisStat.out<-"E"   
             NewCt.out<-temp.in$Count+1
-            NewDAI.out<-exp(-contactsetE)
+            NewDAI.out<-exp(-contactset)
             NewShedRate.out<-chronicdose
               } else {
                   DisStat.out<-"S"
@@ -73,20 +80,28 @@ transmission.fun<-function(season,temp.in,temp,contactnumber,Lambcontactnumber,L
                 }
               
           } else {    #-- for lambs
-              l<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Lamb")
-              contactsetL<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
+            if(season==0){
+              l<-subset(temp, DemogGrp=="Lamb")
+            } else l<-subset(temp, SpatGrpSeason=SpatGrp.in)
+ 
+              #l<-subset(temp, SpatGrp==SpatGrp.in & DemogGrp=="Lamb")
+              samp<-sample(1:dim(l)[1],Lambcontactnumber,replace=T)
+              contactset<-ifelse(LambOpen==0,0,ifelse(dim(l)[1]==0,
                                  0,
-                                 sum(l$SheddingRate[sample(1:dim(l)[1],Lambcontactnumber,replace=T)])))
+                                 sum(l$SheddingRate[samp])))
+              contacts<-l$Status[samp]
+              contactIDs<-l$ID[samp]
+              groupsize<-dim(l)[1]
               ewe<-subset(temp,DemogGrp=="Ewe" & ID==temp.in$Mother)
               contactE<- ifelse(dim(ewe)[1]==0,0,ifelse(ewe$Status=="E"|ewe$Status=="I"|ewe$Status=="C",ewe$SheddingRate,0))  
               DisStat.out<-ifelse(contactE!=0,"I",
-                                       ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactsetL))))==1,
+                                       ifelse(rbinom(1,1,prob=(1-exp(-(LambTransmissionProb*contactset))))==1,
                                               "I","S"))
               NewCt.out<-ifelse(DisStat.out=="I",1,0)
               NewShedRate.out<-ifelse(DisStat.out=="I",1,ifelse(DisStat.out=="S",0,chronicdose))
               NewDAI.out<-1 
               }
-              return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out))
+              return(list(DisStat.out=DisStat.out,NewCt.out=NewCt.out,NewShedRate.out=NewShedRate.out,NewDAI.out=NewDAI.out,contactset=contacts,contactIDs=contactIDs,groupsize=groupsize))
     		}
 
       
@@ -166,6 +181,7 @@ birth.fun<-function(i,temp,BirthRate){
     momsample<-sample(1:NumPotentialMoms,size=floor(NumNewMoms))
     NewMoms<-PotentialMoms[momsample,]$ID
     MomSpatGrpSeason<-PotentialMoms[momsample,]$SpatGrpSeason
+    MomGroupsize<-PotentialMoms[momsample,]$Groupsize
     temp$HasLamb<-apply(as.matrix(temp$ID),1,function(x) mother.fun(x,NewMom=NewMoms))
     NewBirths<-ifelse(BirthWindow==1,length(NewMoms),0)
       
@@ -184,6 +200,7 @@ birth.fun<-function(i,temp,BirthRate){
       NewRows$DoseAtInfection<-rep(NA,NewBirths)
       NewRows$SpatGrp<-1  #-- they need to be in the same spatial groups as their moms...
       NewRows$SpatGrpSeason<-MomSpatGrpSeason
+      NewRows$Groupsize<-MomGroupsize
 		}
   return(NewRows)
 }
@@ -191,7 +208,9 @@ birth.fun<-function(i,temp,BirthRate){
 analysis.fun<-function(loop.output){
   persistence<-table(unlist(lapply(loop.output,is.null)))["FALSE"]
   
-  N<-ChronicCount<-AcuteCount<-SCount<-RCount<-mortality<-rep(NA,persistence)
+  N<-ChronicCount<-AcuteCount<-SCount<-RCount<-ECount<-mortality<-rep(NA,persistence)
+  contactsets<-vector("list",persistence)
+  
 	for(j in 2:persistence){
     mortality[j]<-dim(loop.output[[j]]$DeathMat)[1]
 		N[j]<-dim(loop.output[[j]]$TimestepData)[1]
@@ -203,6 +222,9 @@ analysis.fun<-function(loop.output){
                       0,table(loop.output[[j]]$TimestepData$Status)["S"])
     RCount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["R"])==TRUE,
                       0,table(loop.output[[j]]$TimestepData$Status)["R"])
+    ECount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["E"])==TRUE,
+                      0,table(loop.output[[j]]$TimestepData$Status)["E"])
+    contactsets[[j]]<-loop.output[[j]][[3]]
 	}
-  return(list(N=N,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=SCount,RCount=RCount,mortality=mortality,persistence=persistence))
+  return(list(N=N,ECount=ECount,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=SCount,RCount=RCount,mortality=mortality,persistence=persistence,contactsets=contactsets))
 }
