@@ -11,9 +11,9 @@ IndividualSIR<-function(timesteps=timesteps,
                         InPNAdultSurvAdj=InPNAdultSurvAdj,
                         InPNLambSurvProb=InPNLambSurvProb,
                         InLambSurvProb=InLambSurvProb,
-                        Gamma=Gamma,
+                        GammaLamb=GammaLamb,
                         Nu=Nu,
-                        GammaChronic=GammaChronic,
+                        Gamma=Gamma,
                         Alpha=Alpha,
                         AlphaLamb=AlphaLamb,
                         AlphaChronic=AlphaChronic,
@@ -33,13 +33,12 @@ IndividualSIR<-function(timesteps=timesteps,
   ChronicOldEweSurvProbs<-c(rep(.833,3),rep(.945,4),rep(.850,13),0)*AlphaChronic	
   OldLambSurvProb<-.6	
 	SexRef<-rep(0,n)	
-	Gamma=Gamma
 
 	PNEweDeathProbs<-(1-PNOldEweSurvProbs)/365
 	ChronicEweDeathProbs<-(1-ChronicOldEweSurvProbs)/365
 	EweDeathProbs<-(1-OldEweSurvProbs)/365
 	LambDeathProb<-(1-InLambSurvProb)/365
-	PNLambDeathProb<-	((1-InPNLambSurvProb)/365)^(1/(1/Gamma))
+	PNLambDeathProb<-	((1-InPNLambSurvProb)/365)^(1/(1/GammaLamb))
 
 	PNEweSurvProbs<-c(rep(1-PNEweDeathProbs,each=365),0)	
   ChronicEweSurvProbs<-c(rep(1-ChronicEweDeathProbs,each=365),0)	
@@ -159,8 +158,8 @@ flag=1
         
         #-- Recovery/retention in Chronic #-- maybe add death from chronic as well. 
         else if(temp$Status[j]=="C"){  
-            currentgammaC<-chronicdecrease*temp$Count[j]*GammaChronic   
-						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=tau)==1,"A",ifelse(rbinom(1,1,prob=GammaChronic)==1,"R","C"))
+            currentgammaC<-chronicdecrease*temp$Count[j]*Gamma   
+						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=tau)==1,"A",ifelse(rbinom(1,1,prob=Gamma)==1,"R","C"))
             NewCount[j]<-temp$Count[j]
             NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="C",chronicdose,ifelse(DiseaseStatus[j]=="A",1,0))
 					}
