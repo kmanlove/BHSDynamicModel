@@ -209,7 +209,7 @@ analysis.fun<-function(loop.output){
   persistence<-table(unlist(lapply(loop.output,is.null)))["FALSE"]
   
   N<-ChronicCount<-AcuteCount<-SCount<-RCount<-ECount<-mortality<-rep(NA,persistence)
-  contactsets<-vector("list",persistence)
+  contactsets<-groupsize<-vector("list",persistence)
   
 	for(j in 2:persistence){
     mortality[j]<-dim(loop.output[[j]]$DeathMat)[1]
@@ -225,6 +225,16 @@ analysis.fun<-function(loop.output){
     ECount[j]<-ifelse(is.na(table(loop.output[[j]]$TimestepData$Status)["E"])==TRUE,
                       0,table(loop.output[[j]]$TimestepData$Status)["E"])
     contactsets[[j]]<-loop.output[[j]][[3]]
+    groupsize[[j]]<-table(loop.output[[j]]$TimestepData$Groupsize)
 	}
-  return(list(N=N,ECount=ECount,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=SCount,RCount=RCount,mortality=mortality,persistence=persistence,contactsets=contactsets))
+  return(list(N=N,ECount=ECount,ChronicCount=ChronicCount,AcuteCount=AcuteCount,SCount=SCount,RCount=RCount,mortality=mortality,persistence=persistence,contactsets=contactsets,groupsize=groupsize))
 }
+      
+#TimeToIndivid<-function(loop.output){
+#  
+#}      
+      
+#DurationInClass<-function(loop.output){
+#  #-- need to reshape the data so that it's organized by individuals. --#
+#    
+#}
