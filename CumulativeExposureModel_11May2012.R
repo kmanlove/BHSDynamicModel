@@ -8,14 +8,12 @@ IndividualSIR<-function(timesteps=timesteps,
                         tau=tau,
                         SexRatio=SexRatio,
                         n=n,
-                        InPNAdultSurvAdj=InPNAdultSurvAdj,
-                        InPNLambSurvProb=InPNLambSurvProb,
-                        InLambSurvProb=InLambSurvProb,
+                        Recr=Recr,
+                        SLSdecrease=SLSdecrease,
                         GammaLamb=GammaLamb,
                         Nu=Nu,
                         Gamma=Gamma,
                         Alpha=Alpha,
-                        AlphaLamb=AlphaLamb,
                         AlphaChronic=AlphaChronic,
                         contactnumber=contactnumber,
                         LambcontactnumberIn=LambcontactnumberIn,
@@ -26,25 +24,13 @@ IndividualSIR<-function(timesteps=timesteps,
                         ngroups=ngroups){
   
 	StorageList<-vector("list",timesteps)
- #   StorageList<-vector("list",400)
 	ID<-1:n		
 	OldEweSurvProbs<-c(rep(.833,3),rep(.945,4),rep(.850,13),0)	
-  PNOldEweSurvProbs<-c(rep(.833,3),rep(.945,4),rep(.850,13),0)*InPNAdultSurvAdj	
-  ChronicOldEweSurvProbs<-c(rep(.833,3),rep(.945,4),rep(.850,13),0)*AlphaChronic	
-  OldLambSurvProb<-.6	
 	SexRef<-rep(0,n)	
 
-	PNEweDeathProbs<-(1-PNOldEweSurvProbs)/365
-	ChronicEweDeathProbs<-(1-ChronicOldEweSurvProbs)/365
-	EweDeathProbs<-(1-OldEweSurvProbs)/365
-	LambDeathProb<-(1-InLambSurvProb)/365
-	PNLambDeathProb<-	((1-InPNLambSurvProb)/365)^(1/(1/GammaLamb))
-
-	PNEweSurvProbs<-c(rep(1-PNEweDeathProbs,each=365),0)	
-  ChronicEweSurvProbs<-c(rep(1-ChronicEweDeathProbs,each=365),0)	
-  EweSurvProbs<-c(rep(1-EweDeathProbs,each=365),0)	
-  LambSurvProb<-1-LambDeathProb	
-  PNLambSurvProb<-1-PNLambDeathProb
+	PNEweSurvProbs<-c(rep(1-(1-OldEweSurvProbs*(1-Alpha))/365,each=365),0)	
+  ChronicEweSurvProbs<-c(rep(1-(1-OldEweSurvProbs*(1-AlphaChronic))/365,each=365),0)	
+  EweSurvProbs<-c(rep(1-(1-OldEweSurvProbs)/365,each=365),0)	
 	RefTS1<-as.data.frame(cbind(ID,SexRef))
 
   InitEweSurvProb<-c(.833,.833^2,.833^3,.833^3*.945,.833^3*.945^2,.833^3*.945^3,.833^3*.945^4,.833^3*.945*.850,.833^3*.945*.850^2,.833^3*.945*.850^3,.833^3*.945*.850^4,.833^3*.945*.850^5,.833^3*.945*.850^6,.833^3*.945*.850^7,.833^3*.945*.850^8,.833^3*.945*.850^9,.833^3*.945*.850^10,.833^3*.945*.850^11,.833^3*.945*.850^12,.833^3*.945*.850^13,0)
@@ -100,11 +86,6 @@ flag=1
     EweGroup<-subset(temp,DemogGrp=="Ewe")
     LambGroup<-subset(temp,DemogGrp=="Lamb")
     
-#    SpatGrpNew<-rep(NA,dim(temp)[1])
-#    SpatGrpNew<-ifelse(i %% 365 <= 60, rep(1,dim(temp)[1]),ifelse(i %% 365 == 61, ceiling(runif(dim(temp)[1],min=0,max=ngroups)),temp$SpatGrp))
-#
-#    temp$SpatGrp<-SpatGrpNew
-    
     LambOpen<-lambtransmission.mod.fun(i)
     Lambcontactnumber<-min(dim(LambGroup)[1],LambcontactnumberIn)
     season<-ifelse(i %% 365 <=60, 0,1)
@@ -112,14 +93,6 @@ flag=1
     #-- store contactsets --#
     contactsets<-vector("list",dim(temp)[1])
     
-#    temp.names<-names(temp)
-#    diseaseupdate<-apply(temp,1,function(x) disease.status(x,temp,temp.names,Alpha=Alpha,eta=eta,xi=xi,rho=rho,season=season,Lambcontactnumber=Lambcontactnumber,contactnumber=contactnumber,LambOpen=LambOpen,LambTransmissionProb=LambTransmissionProb,chronicdose=chronicdose,Nu=Nu,chronicdecrease=chronicdecrease,GammaChronic=GammaChronic,tau=tau))
-    
-#    temp$Status<-diseaseupdate
-#    temp$Count<-diseaseupdate$NewCount
-#    temp$SheddingRate<-diseaseupdate$NewSheddingRate
-#    temp$DoseAtInfection<-diseaseupdate$NewDoseAtInfection
-#    temp$groupsize<-diseaseupdate$groupsizeNew
     ptm<-proc.time()
     for(j in 1:dim(temp)[1]){
         temp.in<-temp[j,]
@@ -131,11 +104,6 @@ flag=1
           NewDoseAtInfection[j]<-transmit.out$NewDAI.out
           NewSheddingRate[j]<-transmit.out$NewShedRate.out
           contactsets[[j]]<-transmit.out$contactset
-##          print(season)
-##          print(temp.in$SpatGrpSeason)
-##          print(transmit.out$groupsize)
-##          print(transmit.out$contactset)
-##          print(transmit.out$contactIDs)
  	 		}
         
         #-- from incubatory to acute or chronic --#
@@ -149,7 +117,6 @@ flag=1
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 
         else if(temp$Status[j]=="I"){  #-- can either recover or stay in I. 
-#						DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Gamma)==1,"R","I")
   					DiseaseStatus[j]<-ifelse(rbinom(1,1,prob=Alpha/(1-Alpha)*(eta))==1,"R","I")
             NewCount[j]<-temp$Count[j]
             NewSheddingRate[j]<-ifelse(DiseaseStatus[j]=="I",1,0)
@@ -169,15 +136,12 @@ flag=1
           NewCount[j]<-temp$Count[j]
           NewSheddingRate[j]<-0
         }  
-#        print(j)
         #-- record groupsize --#
         if(season==0){
           groupsizeNew[j]<-dim(temp)[1]
         } else groupsizeNew[j]<-dim(subset(temp,SpatGrpSeason==temp$SpatGrpSeason[j]))[1]
       }
-#   time1[i]<-(proc.time()-ptm)$elapsed
      print(proc.time()-ptm)
-
     
 		temp$Status<-DiseaseStatus
     temp$Count<-NewCount
@@ -188,14 +152,12 @@ flag=1
     ptm2<-proc.time()
 		NewAge<-as.numeric(as.character(temp$Age))+1
 		temp$Age<-NewAge
-    temp$StillAlive<-survival.fun(temp,PNLambSurvProb,PNEweSurvProbs,ChronicEweSurvProbs,EweSurvProbs,LambSurvProb)
-    temp$Cause<-cause.fun(temp,InPNAdultSurvAdj)
-#    time2[i]<-(proc.time()-ptm2)$elapsed
+    temp$StillAlive<-survival.fun(temp,PNEweSurvProbs,ChronicEweSurvProbs,EweSurvProbs,Recr,GammaLamb,SLSdecrease)
+    temp$Cause<-cause.fun(temp,Alpha)
       print(proc.time()-ptm2)
 	#-- 4) Generate new individuals through birth process.
     ptm3<-proc.time()
     BirthWindow<-birth.mod.fun(i)
-  #  NewBirths<-birth.fun(BirthWindow=BirthWindow,temp,BirthRate,SexRatio)
         NumPotentialMoms<-ifelse(BirthWindow==1,dim(subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0))[1],0)
     PotentialMoms<-subset(temp,temp$SexRef==0 & temp$StillAlive==1 & temp$HasLamb==0)
     
@@ -233,8 +195,6 @@ flag=1
     DeathMata<-as.data.frame(cbind(temp$StillAlive, temp$Status, temp$Cause,temp$DemogGrp,temp$Age))
 		names(DeathMata)<-deathnames
     DeathMat<-subset(DeathMata,StillAlive==0)
-#    TimestepData=data.frame(cbind(rbind(subset(tempout,StillAlive==1),NewBirths)),rep(i,dim(rbind(subset(temp,StillAlive==1)))[1]))
-#    TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewBirths))
         TimestepData=data.frame(rbind(subset(temp,StillAlive==1),NewRows))
 
     names(TimestepData)<-names(temp)
