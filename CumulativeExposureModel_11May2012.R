@@ -1,5 +1,6 @@
 require(stats)	
 
+#-- should switch this to with. --#.
 IndividualSIR<-function(timesteps=timesteps,
                         BirthRate=BirthRate,
                         eta=eta,
@@ -37,15 +38,16 @@ IndividualSIR<-function(timesteps=timesteps,
 	NormEweSurvProb<-InitEweSurvProb/sum(InitEweSurvProb)
 
 	RefTS1$OldAge<-sample(1:21,n,NormEweSurvProb,replace=T)-1	
-	RefTS1$Age<-(RefTS1$OldAge-1)*365 + 182
+	RefTS1$Age<-(RefTS1$OldAge)*365 + 182
 	RefTS1$StillAlive<-rbinom(dim(RefTS1)[1],1,.9)	
   RefTS1$Status<-c(rep("I",1),rep("R",floor(PropRecovered*n)),rep("S",n-floor(PropRecovered*n)-1))	
   RefTS1$Cause<-rep(0,n)	
   RefTS1$SheddingRate<-c(rep(1,1),rep(0,n-1))   
   RefTS1$Count<-c(rep(1,1),rep(0,n-1))     
-  RefTS1$Mother<-rep(NA,length(RefTS1$Age))
+  RefTS1$Mother<-RefTS1$DemogGrp<-rep(NA,length(RefTS1$Age))
     for(i in 1:n){
       RefTS1$Mother[i]<-ifelse(RefTS1$Age[i]>=365,NA,sample(subset(RefTS1,Age>=365)$ID,1))
+      RefTS1$DemogGrp[i]<-ifelse(RefTS1$Age[i]>=365,"Ewe","Lamb")
     }
   RefTS1$SpatGrp<-rep(1,length(RefTS1$Age))
   RefTS1$SpatGrpSeason<-floor(runif(length(RefTS1$Age),min=0,max=ngroups))
@@ -64,6 +66,8 @@ IndividualSIR<-function(timesteps=timesteps,
 	#----------------------------------------------------#
 flag=1
 	for(i in 2:timesteps){
+#      for(i in 2:209){
+
     if(flag<1)
       break;
       
@@ -73,8 +77,9 @@ flag=1
 		Age<-as.numeric(as.character(temp$Age))
 		Sex<-temp$SexRef
 			#-- Classify all individuals to a demographic group, Lamb, Ewe or Ram.
-			temp$DemogGrp<-rep(NA,dim(temp)[1])
-			temp$DemogGrp<-sapply(Age,DemogFun1)
+			DemogGrpNew<-sapply(Age,function(x) DemogFun1(x))
+    
+    temp$DemogGrp<-DemogGrpNew
 
     #-- Loop through all individuals to update disease statuses.
 		DiseaseStatus<-rep(NA,dim(temp)[1])
@@ -108,11 +113,18 @@ flag=1
         
         #-- from incubatory to acute or chronic --#
         else if (temp$Status[j]=="E"){
+          if(temp$DemogGrp[j]=="Lamb"){
+            DiseaseStatus[j]<-ifelse(rbinom(1,1,xi)==1,"I","E")
+            NewCount[j]<-temp$Count[j]
+            NewSheddingRate[j]<-1
+            NewDoseAtInfection[j]<-temp$DoseAtInfection[j]
+          } else{
           acutechronic.out<-acutechronic.fun(temp.in,temp,chronicdose=chronicdose,xi=xi,rho=rho)
           DiseaseStatus[j]<-acutechronic.out$DisStat.out
           NewCount[j]<-acutechronic.out$NewCt.out
           NewSheddingRate[j]<-acutechronic.out$NewShedRate.out
           NewDoseAtInfection[j]<-acutechronic.out$NewDAI.out
+          }
         }
         
         #-- Recovery from Acute #-- maybe add death from acute as well. 
@@ -141,12 +153,15 @@ flag=1
           groupsizeNew[j]<-dim(temp)[1]
         } else groupsizeNew[j]<-dim(subset(temp,SpatGrpSeason==temp$SpatGrpSeason[j]))[1]
       }
+    
      print(proc.time()-ptm)
     
 		temp$Status<-DiseaseStatus
     temp$Count<-NewCount
     temp$SheddingRate<-NewSheddingRate
     temp$Groupsize<-groupsizeNew
+    
+#    table(temp$DemogGrp,temp$Status)
     
 	#-- 3) Update individual ages and "Alive" statuses
     ptm2<-proc.time()
@@ -216,9 +231,9 @@ flag=1
   contactsets<-output.analysis$contactsets; groupsize<-output.analysis$groupsize
   print(proc.time()-ptm4)
   
-	return(list(persistence=persistence,
-              ECount=ECount,
-              ChronicCount=ChronicCount,
+	return(list(persistence=persistence,  #-- scalar
+              ECount=ECount,#-- vector (variable length)
+              ChronicCount=ChronicCount,#-- vector (variable length)
               AcuteCount=AcuteCount,
               SCount=SCount,
               RCount=RCount,
@@ -229,5 +244,16 @@ flag=1
               time1=time1,
               time2=time2,
               time3=time3,
-              StorageList=StorageList))
+              StorageList=StorageList #-- 
+              ))
 }
+
+
+#-- take a look at plyr. reshape package as well --#
+#-- write a big csv for data storage; write list for everyone else --#
+#-- help(package="plyr")
+#-- 
+#-- gc() #-- garbage collection
+#-- Ideas for output clean-up: --#
+  #-- write each element of the list to its own storage object.  
+  #-- write each storage object once at the END of the simulation.
